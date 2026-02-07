@@ -77,7 +77,7 @@ const TrustSection = () => {
               Our team takes the time to understand your situation and work with you to find a solution that makes sense. We believe in second chances and building lasting relationships with the families we serve.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
-              <a href="#contact" className="btn-primary">
+              <a href="/apply" className="btn-primary">
                 Apply Now
               </a>
               <a href="#services" className="btn-secondary">
