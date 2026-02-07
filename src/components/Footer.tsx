@@ -13,7 +13,7 @@ const Footer = () => {
             <p className="text-primary-foreground/80 mb-6">
               Helping families achieve financial confidence through fair, transparent lending since our founding.
             </p>
-            <a href="#contact" className="btn-primary text-sm py-3 px-6">
+            <a href="/apply" className="btn-primary text-sm py-3 px-6">
               Apply Now
             </a>
           </div>

@@ -45,7 +45,7 @@ const ServicesSection = () => {
               </p>
             </div>
             <div className="mt-8">
-              <a href="#contact" className="btn-primary">
+              <a href="/apply" className="btn-primary">
                 Start Your Application
               </a>
             </div>

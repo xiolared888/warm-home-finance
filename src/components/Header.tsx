@@ -1,14 +1,18 @@
 import { useState } from "react";
 import { Menu, X, Phone } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const location = useLocation();
+  const isHome = location.pathname === "/";
 
   const navLinks = [
-    { name: "Home", href: "#home" },
-    { name: "About", href: "#about" },
-    { name: "Services", href: "#services" },
-    { name: "Contact", href: "#contact" },
+    { name: "Home", href: isHome ? "#home" : "/", isRoute: !isHome },
+    { name: "About", href: isHome ? "#about" : "/#about", isRoute: !isHome },
+    { name: "Our Team", href: "#team" },
+    { name: "Blog", href: "#blog" },
+    { name: "Contact Us", href: isHome ? "#contact" : "/#contact", isRoute: !isHome },
   ];
 
   return (
@@ -16,23 +20,33 @@ const Header = () => {
       <div className="container-wide">
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
-          <a href="#home" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <span className="text-2xl font-serif font-bold text-primary">
               Fox Finance
             </span>
-          </a>
+          </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a
-                key={link.name}
-                href={link.href}
-                className="text-foreground/80 hover:text-primary font-medium transition-colors"
-              >
-                {link.name}
-              </a>
-            ))}
+            {navLinks.map((link) =>
+              link.isRoute ? (
+                <Link
+                  key={link.name}
+                  to={link.href}
+                  className="text-foreground/80 hover:text-primary font-medium transition-colors"
+                >
+                  {link.name}
+                </Link>
+              ) : (
+                <a
+                  key={link.name}
+                  href={link.href}
+                  className="text-foreground/80 hover:text-primary font-medium transition-colors"
+                >
+                  {link.name}
+                </a>
+              )
+            )}
           </nav>
 
           {/* CTA & Phone */}
@@ -44,9 +58,9 @@ const Header = () => {
               <Phone className="w-4 h-4" />
               <span className="font-medium">(314) 436-5600</span>
             </a>
-            <a href="#contact" className="btn-primary text-sm py-3 px-6">
+            <Link to="/apply" className="btn-primary text-sm py-3 px-6">
               Apply Now
-            </a>
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
@@ -63,16 +77,27 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-border animate-fade-in">
             <nav className="flex flex-col gap-4">
-              {navLinks.map((link) => (
-                <a
-                  key={link.name}
-                  href={link.href}
-                  className="text-foreground/80 hover:text-primary font-medium py-2"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  {link.name}
-                </a>
-              ))}
+              {navLinks.map((link) =>
+                link.isRoute ? (
+                  <Link
+                    key={link.name}
+                    to={link.href}
+                    className="text-foreground/80 hover:text-primary font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {link.name}
+                  </Link>
+                ) : (
+                  <a
+                    key={link.name}
+                    href={link.href}
+                    className="text-foreground/80 hover:text-primary font-medium py-2"
+                    onClick={() => setIsMenuOpen(false)}
+                  >
+                    {link.name}
+                  </a>
+                )
+              )}
               <a
                 href="tel:3144365600"
                 className="flex items-center gap-2 text-muted-foreground py-2"
@@ -80,9 +105,13 @@ const Header = () => {
                 <Phone className="w-4 h-4" />
                 <span>(314) 436-5600</span>
               </a>
-              <a href="#contact" className="btn-primary text-center mt-2">
+              <Link
+                to="/apply"
+                className="btn-primary text-center mt-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
                 Apply Now
-              </a>
+              </Link>
             </nav>
           </div>
         )}
