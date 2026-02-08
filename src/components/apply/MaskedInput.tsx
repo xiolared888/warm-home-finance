@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import React, { forwardRef, useCallback } from "react";
 
 const masks = {
   ssn: (value: string): string => {
@@ -31,24 +31,29 @@ interface MaskedInputProps {
   type?: string;
 }
 
-const MaskedInput = ({ value, onChange, mask, name, placeholder, className, type }: MaskedInputProps) => {
-  const handleChange = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onChange(masks[mask](e.target.value));
-    },
-    [mask, onChange]
-  );
+const MaskedInput = forwardRef<HTMLInputElement, MaskedInputProps>(
+  ({ value, onChange, mask, name, placeholder, className, type }, ref) => {
+    const handleChange = useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        onChange(masks[mask](e.target.value));
+      },
+      [mask, onChange]
+    );
 
-  return (
-    <input
-      name={name}
-      type={type || "text"}
-      value={value}
-      onChange={handleChange}
-      placeholder={placeholder}
-      className={className}
-    />
-  );
-};
+    return (
+      <input
+        ref={ref}
+        name={name}
+        type={type || "text"}
+        value={value}
+        onChange={handleChange}
+        placeholder={placeholder}
+        className={className}
+      />
+    );
+  }
+);
+
+MaskedInput.displayName = "MaskedInput";
 
 export default MaskedInput;
