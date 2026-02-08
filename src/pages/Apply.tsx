@@ -145,21 +145,43 @@ const Apply = () => {
 
     let lastError: string | null = null;
 
-    for (let attempt = 0; attempt < 2; attempt++) {
+    // Try JSON first, fall back to form-urlencoded if CORS blocks preflight
+    const trySubmit = async (useFormEncoded: boolean): Promise<Response> => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 15000);
 
       try {
-        const response = await fetch(WEBHOOK_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        });
+        let fetchOptions: RequestInit;
 
+        if (useFormEncoded) {
+          const formBody = new URLSearchParams();
+          Object.entries(payload).forEach(([key, val]) => formBody.append(key, String(val)));
+          fetchOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: formBody.toString(),
+            signal: controller.signal,
+          };
+        } else {
+          fetchOptions = {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify(payload),
+            signal: controller.signal,
+          };
+        }
+
+        if (DEBUG_MODE) {
+          console.log(`[FOX-DEBUG] Attempt (${useFormEncoded ? "form-urlencoded" : "JSON"}):`);
+          console.log("[FOX-DEBUG] URL:", WEBHOOK_URL);
+          console.log("[FOX-DEBUG] Headers:", fetchOptions.headers);
+          console.log("[FOX-DEBUG] Body:", fetchOptions.body);
+        }
+
+        const response = await fetch(WEBHOOK_URL, fetchOptions);
         clearTimeout(timeoutId);
 
         if (DEBUG_MODE) {
@@ -169,6 +191,18 @@ const Apply = () => {
             console.log("[FOX-DEBUG] Response:", text);
           } catch {}
         }
+
+        return response;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        throw err;
+      }
+    };
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        // First attempt: JSON. If CORS fails, retry with form-urlencoded
+        const response = await trySubmit(attempt > 0);
 
         if (response.ok) {
           setSubmitStatus("success");
@@ -181,7 +215,6 @@ const Apply = () => {
         lastError = `Error 2002: Submission failed (HTTP ${response.status}). Please try again or call (314) 436-5600.`;
         break;
       } catch (err) {
-        clearTimeout(timeoutId);
         if (err instanceof DOMException && err.name === "AbortError") {
           lastError = "Error 2003: Request timed out (15 s). Please check your connection and try again.";
           if (DEBUG_MODE) console.log(`[FOX-DEBUG] Attempt ${attempt + 1}: Timeout`);
@@ -190,7 +223,7 @@ const Apply = () => {
           if (DEBUG_MODE) console.log(`[FOX-DEBUG] Attempt ${attempt + 1}: Network error`, err);
         }
         if (attempt === 0) {
-          if (DEBUG_MODE) console.log("[FOX-DEBUG] Retrying...");
+          if (DEBUG_MODE) console.log("[FOX-DEBUG] Retrying with form-urlencoded...");
           continue;
         }
       }
