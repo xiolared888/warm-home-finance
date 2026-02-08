@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Header from "@/components/Header";
@@ -8,21 +8,21 @@ import applyBg from "@/assets/apply-bg.jpg";
 import ApplyFormFields from "@/components/apply/ApplyFormFields";
 
 const applySchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Please enter a valid email address"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  socialSecurityNumber: z.string().regex(/^\d{3}-?\d{2}-?\d{4}$/, "SSN must be 9 digits (XXX-XX-XXXX)"),
-  address: z.string().min(1, "Address is required"),
-  city: z.string().min(1, "City is required"),
-  state: z.string().min(1, "State is required"),
-  zip: z.string().regex(/^\d{5}$/, "Zip must be 5 digits"),
-  cellPhone: z.string().min(10, "Please enter a valid phone number"),
-  driversLicenseNumber: z.string().min(1, "Driver's license number is required"),
-  driversLicenseState: z.string().min(1, "Driver's license state is required"),
+  firstName: z.string().min(1, "Error 1001: First name is required"),
+  lastName: z.string().min(1, "Error 1001: Last name is required"),
+  email: z.string().min(1, "Error 1001: Email is required").email("Error 1002: Invalid email format — use name@example.com"),
+  dateOfBirth: z.string().min(1, "Error 1001: Date of birth is required"),
+  socialSecurityNumber: z.string().min(1, "Error 1001: SSN is required").regex(/^\d{3}-\d{2}-\d{4}$/, "Error 1004: SSN must match XXX-XX-XXXX"),
+  address: z.string().min(1, "Error 1001: Address is required"),
+  city: z.string().min(1, "Error 1001: City is required"),
+  state: z.string().min(1, "Error 1001: State is required"),
+  zip: z.string().min(1, "Error 1001: ZIP code is required").regex(/^\d{5}(-\d{4})?$/, "Error 1005: ZIP must be 5 digits or ZIP+4"),
+  cellPhone: z.string().min(1, "Error 1001: Cell phone is required").regex(/^\(\d{3}\) \d{3}-\d{4}$/, "Error 1003: Phone must match (XXX) XXX-XXXX"),
+  driversLicenseNumber: z.string().min(1, "Error 1001: Driver's license number is required"),
+  driversLicenseState: z.string().min(1, "Error 1001: Driver's license state is required"),
   bestTimeToCall: z.string().optional(),
   howLongAtAddress: z.string().optional(),
-  employerName: z.string().min(1, "Employer name is required"),
+  employerName: z.string().min(1, "Error 1001: Employer name is required"),
   employmentStatus: z.string().optional(),
   hasCoApplicant: z.string().optional(),
   howLongEmployed: z.string().optional(),
@@ -36,14 +36,14 @@ const applySchema = z.object({
   employerZip: z.string().optional(),
   supervisorName: z.string().optional(),
   loanAmount: z.string().optional(),
-  loanPurpose: z.string().min(1, "Loan purpose is required"),
+  loanPurpose: z.string().min(1, "Error 1001: Loan purpose is required"),
   hasDirectDeposit: z.string().optional(),
   hasPaydayLoans: z.string().optional(),
   numberOfPaydayLoans: z.string().optional(),
   incomeSource: z.string().optional(),
-  bankName: z.string().min(1, "Bank name is required"),
-  accountNumber: z.string().min(1, "Account number is required"),
-  routingNumber: z.string().min(1, "Routing number is required"),
+  bankName: z.string().min(1, "Error 1001: Bank name is required"),
+  accountNumber: z.string().min(1, "Error 1001: Account number is required"),
+  routingNumber: z.string().min(1, "Error 1001: Routing number is required"),
   paymentFrequency: z.string().optional(),
   militaryAffiliation: z.string().optional(),
 });
@@ -51,10 +51,12 @@ const applySchema = z.object({
 export type ApplyFormData = z.infer<typeof applySchema>;
 
 const WEBHOOK_URL = "https://n8n.srv1045103.hstgr.cloud/webhook/3fa67eb2-ad13-4bb5-befd-8de8cc7b4068";
+const DEBUG_MODE = true; // Toggle to false to disable debug logging
 
 const Apply = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<"idle" | "success" | "error">("idle");
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   const form = useForm<ApplyFormData>({
     resolver: zodResolver(applySchema),
@@ -74,9 +76,23 @@ const Apply = () => {
     },
   });
 
+  const onValidationError = (errors: FieldErrors<ApplyFormData>) => {
+    const firstKey = Object.keys(errors)[0];
+    if (firstKey) {
+      setTimeout(() => {
+        const el = document.querySelector(`[name="${firstKey}"]`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          (el as HTMLElement).focus();
+        }
+      }, 100);
+    }
+  };
+
   const onSubmit = async (data: ApplyFormData) => {
     setIsSubmitting(true);
     setSubmitStatus("idle");
+    setSubmitError(null);
 
     const payload = {
       firstName: data.firstName,
@@ -98,7 +114,9 @@ const Apply = () => {
       hasCoApplicant: data.hasCoApplicant || "",
       howLongEmployed: data.howLongEmployed || "",
       workPhoneNumber: data.workPhoneNumber || "",
+      workPhoneNumber2: data.workPhoneNumber2 || "",
       employerPhoneNumber: data.employerPhoneNumber || "",
+      employerPhoneNumber2: data.employerPhoneNumber2 || "",
       employerAddress: data.employerAddress || "",
       employerCity: data.employerCity || "",
       employerZip: data.employerZip || "",
@@ -114,27 +132,73 @@ const Apply = () => {
       routingNumber: data.routingNumber,
       paymentFrequency: data.paymentFrequency || "",
       militaryAffiliation: data.militaryAffiliation || "",
+      source: "lovable_form",
+      submitted_at: new Date().toISOString(),
     };
 
-    try {
-      const response = await fetch(WEBHOOK_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (response.ok) {
-        setSubmitStatus("success");
-        form.reset();
-        window.scrollTo({ top: 0, behavior: "smooth" });
-      } else {
-        setSubmitStatus("error");
-      }
-    } catch {
-      setSubmitStatus("error");
-    } finally {
-      setIsSubmitting(false);
+    if (DEBUG_MODE) {
+      console.log("[FOX-DEBUG] URL:", WEBHOOK_URL);
+      console.log("[FOX-DEBUG] Method: POST");
+      console.log("[FOX-DEBUG] Headers:", { "Content-Type": "application/json", Accept: "application/json" });
+      console.log("[FOX-DEBUG] Payload:", JSON.stringify(payload, null, 2));
     }
+
+    let lastError: string | null = null;
+
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const response = await fetch(WEBHOOK_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (DEBUG_MODE) {
+          console.log("[FOX-DEBUG] Status:", response.status);
+          try {
+            const text = await response.clone().text();
+            console.log("[FOX-DEBUG] Response:", text);
+          } catch {}
+        }
+
+        if (response.ok) {
+          setSubmitStatus("success");
+          form.reset();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          setIsSubmitting(false);
+          return;
+        }
+
+        lastError = `Error 2002: Submission failed (HTTP ${response.status}). Please try again or call (314) 436-5600.`;
+        break;
+      } catch (err) {
+        clearTimeout(timeoutId);
+        if (err instanceof DOMException && err.name === "AbortError") {
+          lastError = "Error 2003: Request timed out (15 s). Please check your connection and try again.";
+          if (DEBUG_MODE) console.log(`[FOX-DEBUG] Attempt ${attempt + 1}: Timeout`);
+        } else {
+          lastError = "Error 2001: Could not reach the server. Please check your connection and try again.";
+          if (DEBUG_MODE) console.log(`[FOX-DEBUG] Attempt ${attempt + 1}: Network error`, err);
+        }
+        if (attempt === 0) {
+          if (DEBUG_MODE) console.log("[FOX-DEBUG] Retrying...");
+          continue;
+        }
+      }
+    }
+
+    setSubmitStatus("error");
+    setSubmitError(lastError);
+    setIsSubmitting(false);
   };
 
   return (
@@ -178,14 +242,14 @@ const Apply = () => {
               <div className="mb-8 p-6 rounded-xl bg-red-500/20 border border-red-400/40 text-center animate-fade-in">
                 <p className="text-white font-semibold text-lg mb-2">Submission Error</p>
                 <p className="text-white/90">
-                  There was an error submitting your application. Please try again or call us at{" "}
-                  <a href="tel:3144365600" className="underline">(314) 436-5600</a>.
+                  {submitError || "There was an error submitting your application."}{" "}
+                  Call us at <a href="tel:3144365600" className="underline">(314) 436-5600</a> if the problem persists.
                 </p>
               </div>
             )}
 
             {/* Form */}
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit, onValidationError)} className="space-y-8">
               <ApplyFormFields form={form} />
 
               {/* Submit */}

@@ -1,6 +1,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { ApplyFormData } from "@/pages/Apply";
 import FormField from "./FormField";
+import MaskedInput from "./MaskedInput";
 import RadioGroup from "./RadioGroup";
 import SectionHeading from "./SectionHeading";
 
@@ -53,19 +54,47 @@ const EmploymentSection = ({ form }: Props) => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FormField label="Work Phone Number" error={errors.workPhoneNumber}>
-            <input {...register("workPhoneNumber")} type="tel" placeholder="(XXX) XXX-XXXX" className={inputClass} />
+            <MaskedInput
+              name="workPhoneNumber"
+              mask="phone"
+              value={watch("workPhoneNumber") || ""}
+              onChange={(val) => setValue("workPhoneNumber", val)}
+              placeholder="(XXX) XXX-XXXX"
+              className={inputClass}
+            />
           </FormField>
           <FormField label="Work Phone Number (Alt)" error={errors.workPhoneNumber2}>
-            <input {...register("workPhoneNumber2")} type="tel" placeholder="(XXX) XXX-XXXX" className={inputClass} />
+            <MaskedInput
+              name="workPhoneNumber2"
+              mask="phone"
+              value={watch("workPhoneNumber2") || ""}
+              onChange={(val) => setValue("workPhoneNumber2", val)}
+              placeholder="(XXX) XXX-XXXX"
+              className={inputClass}
+            />
           </FormField>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <FormField label="Employer Phone Number" error={errors.employerPhoneNumber}>
-            <input {...register("employerPhoneNumber")} type="tel" placeholder="(XXX) XXX-XXXX" className={inputClass} />
+            <MaskedInput
+              name="employerPhoneNumber"
+              mask="phone"
+              value={watch("employerPhoneNumber") || ""}
+              onChange={(val) => setValue("employerPhoneNumber", val)}
+              placeholder="(XXX) XXX-XXXX"
+              className={inputClass}
+            />
           </FormField>
           <FormField label="Employer Phone Number (Alt)" error={errors.employerPhoneNumber2}>
-            <input {...register("employerPhoneNumber2")} type="tel" placeholder="(XXX) XXX-XXXX" className={inputClass} />
+            <MaskedInput
+              name="employerPhoneNumber2"
+              mask="phone"
+              value={watch("employerPhoneNumber2") || ""}
+              onChange={(val) => setValue("employerPhoneNumber2", val)}
+              placeholder="(XXX) XXX-XXXX"
+              className={inputClass}
+            />
           </FormField>
         </div>
 

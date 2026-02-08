@@ -1,6 +1,7 @@
 import type { UseFormReturn } from "react-hook-form";
 import type { ApplyFormData } from "@/pages/Apply";
 import FormField from "./FormField";
+import MaskedInput from "./MaskedInput";
 import RadioGroup from "./RadioGroup";
 import SectionHeading from "./SectionHeading";
 
@@ -41,7 +42,14 @@ const PersonalInfoSection = ({ form }: Props) => {
         </FormField>
 
         <FormField label="Social Security Number" required error={errors.socialSecurityNumber}>
-          <input {...register("socialSecurityNumber")} placeholder="XXX-XX-XXXX" className={inputClass} />
+          <MaskedInput
+            name="socialSecurityNumber"
+            mask="ssn"
+            value={watch("socialSecurityNumber") || ""}
+            onChange={(val) => setValue("socialSecurityNumber", val, { shouldValidate: false })}
+            placeholder="XXX-XX-XXXX"
+            className={inputClass}
+          />
         </FormField>
 
         <FormField label="Address" required error={errors.address}>
@@ -56,12 +64,26 @@ const PersonalInfoSection = ({ form }: Props) => {
             <input {...register("state")} placeholder="State" className={inputClass} />
           </FormField>
           <FormField label="Zip" required error={errors.zip}>
-            <input {...register("zip")} placeholder="00000" className={inputClass} />
+            <MaskedInput
+              name="zip"
+              mask="zip"
+              value={watch("zip") || ""}
+              onChange={(val) => setValue("zip", val, { shouldValidate: false })}
+              placeholder="00000"
+              className={inputClass}
+            />
           </FormField>
         </div>
 
         <FormField label="Cell Phone" required error={errors.cellPhone}>
-          <input {...register("cellPhone")} type="tel" placeholder="(XXX) XXX-XXXX" className={inputClass} />
+          <MaskedInput
+            name="cellPhone"
+            mask="phone"
+            value={watch("cellPhone") || ""}
+            onChange={(val) => setValue("cellPhone", val, { shouldValidate: false })}
+            placeholder="(XXX) XXX-XXXX"
+            className={inputClass}
+          />
         </FormField>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
