@@ -15,9 +15,17 @@ const FormField = ({ label, required, error, children, className = "" }: FormInp
         {label}
         {required && <span className="text-red-400 ml-1">*</span>}
       </label>
-      {children}
+      <div
+        className={
+          error
+            ? "[&>input]:!border-red-400 [&>input]:!ring-2 [&>input]:!ring-red-400/30 [&>select]:!border-red-400 [&>select]:!ring-2 [&>select]:!ring-red-400/30 [&>textarea]:!border-red-400 [&>textarea]:!ring-2 [&>textarea]:!ring-red-400/30"
+            : ""
+        }
+      >
+        {children}
+      </div>
       {error && (
-        <p className="mt-1.5 text-xs text-red-400">{error.message}</p>
+        <p className="mt-1.5 text-sm text-red-400 font-medium">{error.message}</p>
       )}
     </div>
   );
