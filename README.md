@@ -1,73 +1,131 @@
-# Welcome to your Lovable project
+# Fox Financial Loan Intake Landing Page
 
-## Project info
+This repository contains the landing page and initial automation infrastructure for **Fox Financial**, a lending company focused on consumer and business loan products.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+The project is currently under active development. It includes a partially built website, a functional lead intake form, and an early-stage webhook integration designed to support a larger, AI-enhanced loan processing workflow.
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## Project Overview
 
-**Use Lovable**
+The purpose of this project is to create a scalable front-facing experience for loan inquiries while laying the foundation for an automated backend that streamlines the loan application and review process.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+At this stage, the focus is on:
 
-Changes made via Lovable will be committed automatically to this repo.
+* Lead capture through a structured form
+* Reliable webhook-based data submission
+* Preparing the system for future AI-driven workflows and decision support
 
-**Use your preferred IDE**
+This repository reflects an **in-progress implementation** and will continue to evolve as new features and automation logic are added.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Current Features
 
-Follow these steps:
+* **Landing Page Website**
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+  * Branded landing page for Fox Financial
+  * Designed to introduce loan offerings and collect inquiries
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+* **Loan Inquiry Form**
 
-# Step 3: Install the necessary dependencies.
-npm i
+  * Captures applicant and loan-related information
+  * Performs client-side validation before submission
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+* **Webhook Integration (In Progress)**
 
-**Edit a file directly in GitHub**
+  * Form submissions are connected to a webhook endpoint
+  * Initial data routing logic is implemented
+  * Backend automation is actively being expanded
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+* **Automation Foundation**
 
-**Use GitHub Codespaces**
+  * Early workflow structure in place for loan intake
+  * Designed to support future AI-enhanced processing and routing
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+---
 
-## What technologies are used for this project?
+## Planned Enhancements
 
-This project is built with:
+* AI-assisted loan intake and classification
+* Automated loan workflow routing
+* Enhanced validation and error handling
+* Integration with internal systems and data stores
+* Expanded notification and follow-up logic
+* Full website build-out beyond the landing page
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+---
 
-## How can I deploy this project?
+## Project Status
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+**Active development**
 
-## Can I connect a custom domain to my Lovable project?
+This project is intentionally open-ended and will be updated regularly as:
 
-Yes, you can!
+* Automation logic is finalized
+* AI workflows are introduced
+* Website functionality expands
+* Backend integrations are completed
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Expect ongoing commits and architectural changes.
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## Tech Stack
+
+* Frontend landing page and form
+* Webhook-based backend integration
+* Automation platform for workflow orchestration
+* AI tooling planned for future enhancements
+
+---
+
+## Setup Instructions
+
+1. Clone the repository:
+
+   ```bash
+   git clone https://github.com/your-repo/fox-financial-landing-page.git
+   cd fox-financial-landing-page
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables for webhook endpoints
+
+4. Run the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+Additional setup details will be added as automation and integrations mature.
+
+---
+
+## Use Case
+
+This project supports:
+
+* Loan inquiry intake
+* Early-stage applicant data collection
+* Automated workflow preparation for lending operations
+
+It is designed to scale as Fox Financial’s loan processing automation expands.
+
+---
+
+## Contributions
+
+This project is under active development. Contributions, suggestions, and architectural feedback may be considered as the system evolves.
+
+---
+
+## License
+
+MIT
+
