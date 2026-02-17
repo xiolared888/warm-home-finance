@@ -1,11 +1,24 @@
-import { useState } from "react";
-import { Menu, X, Phone } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { Menu, X, Phone, ChevronDown } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const isHome = location.pathname === "/";
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setUserDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const navLinks = [
     { name: "Home", href: isHome ? "#home" : "/", isRoute: !isHome },
@@ -49,7 +62,7 @@ const Header = () => {
             )}
           </nav>
 
-          {/* CTA & Phone */}
+          {/* CTA & Phone & User Dropdown */}
           <div className="hidden md:flex items-center gap-6">
             <a
               href="tel:3144365600"
@@ -58,6 +71,31 @@ const Header = () => {
               <Phone className="w-4 h-4" />
               <span className="font-medium">(314) 436-5600</span>
             </a>
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                className="flex items-center gap-1.5 text-foreground/80 hover:text-primary font-medium transition-colors text-sm"
+              >
+                User
+                <ChevronDown className={`w-4 h-4 transition-transform ${userDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+              {userDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-40 bg-popover border border-border rounded-lg shadow-lg z-50 py-1">
+                  <button
+                    onClick={() => { setUserDropdownOpen(false); navigate("/"); }}
+                    className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    Applicant
+                  </button>
+                  <button
+                    onClick={() => { setUserDropdownOpen(false); navigate("/admin/login"); }}
+                    className="w-full text-left px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+                  >
+                    Admin
+                  </button>
+                </div>
+              )}
+            </div>
             <Link to="/apply" className="btn-primary text-sm py-3 px-6">
               Apply Now
             </Link>
