@@ -50,7 +50,7 @@ const applySchema = z.object({
 
 export type ApplyFormData = z.infer<typeof applySchema>;
 
-const WEBHOOK_URL = "https://n8n.srv1045103.hstgr.cloud/webhook/3fa67eb2-ad13-4bb5-befd-8de8cc7b4068";
+const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/loan-application";
 const DEBUG_MODE = true; // Toggle to false to disable debug logging
 
 const Apply = () => {
