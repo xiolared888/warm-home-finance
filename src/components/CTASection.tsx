@@ -19,8 +19,8 @@ const CTASection = () => {
             Whether you're ready to apply or just have questions, we're here for you. Our team is committed to providing friendly, respectful service every step of the way.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="/apply" className="btn-primary">
-              Apply Now
+            <a href="#contact" className="btn-primary">
+              Contact Us
             </a>
             <a href="#contact" className="btn-outline">
               Contact Us
