@@ -96,9 +96,9 @@ const Header = () => {
                 </div>
               )}
             </div>
-            <Link to="/apply" className="btn-primary text-sm py-3 px-6">
-              Apply Now
-            </Link>
+            <a href="#contact" className="btn-primary text-sm py-3 px-6">
+              Contact Us
+            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -143,13 +143,13 @@ const Header = () => {
                 <Phone className="w-4 h-4" />
                 <span>(314) 436-5600</span>
               </a>
-              <Link
-                to="/apply"
+              <a
+                href="#contact"
                 className="btn-primary text-center mt-2"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Apply Now
-              </Link>
+                Contact Us
+              </a>
             </nav>
           </div>
         )}
