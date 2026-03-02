@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { Send, User, Mail, Phone, MapPin, DollarSign, Briefcase } from "lucide-react";
+import { Send, User, Mail, Phone, MapPin, DollarSign, Briefcase, Calendar, FileText } from "lucide-react";
 import { z } from "zod";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook-test/loan-application";
 
@@ -17,6 +18,8 @@ const applicationSchema = z.object({
   loanAmount: z.number({ invalid_type_error: "Loan amount is required" }).positive("Loan amount must be positive"),
   employmentStatus: z.enum(["Employed", "Unemployed", "Self-Employed"], { required_error: "Please select employment status" }),
   monthlyIncome: z.number({ invalid_type_error: "Monthly income is required" }).nonnegative("Income must be 0 or more"),
+  dob: z.string().min(1, "Date of birth is required"),
+  notes: z.string().optional(),
 });
 
 type ApplicationData = z.infer<typeof applicationSchema>;
@@ -31,6 +34,8 @@ const initialForm: ApplicationData = {
   loanAmount: 0,
   employmentStatus: "Employed",
   monthlyIncome: 0,
+  dob: "",
+  notes: "",
 };
 
 const Apply = () => {
@@ -39,7 +44,7 @@ const Apply = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -147,6 +152,13 @@ const Apply = () => {
                     {errors.phone && <p className={errorClass}>{errors.phone}</p>}
                   </div>
                 </div>
+                <div className="mt-5">
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} className={inputClass} />
+                  </div>
+                  {errors.dob && <p className={errorClass}>{errors.dob}</p>}
+                </div>
               </div>
 
               {/* Address */}
@@ -202,6 +214,21 @@ const Apply = () => {
                     </div>
                     {errors.monthlyIncome && <p className={errorClass}>{errors.monthlyIncome}</p>}
                   </div>
+                </div>
+              </div>
+
+              {/* Notes */}
+              <div>
+                <h2 className="text-xl font-serif text-foreground mb-6">Additional Notes</h2>
+                <div className="relative">
+                  <FileText className="absolute left-4 top-4 w-5 h-5 text-muted-foreground" />
+                  <Textarea
+                    name="notes"
+                    placeholder="What is the loan for? When can you pay it back? Any other details..."
+                    value={formData.notes}
+                    onChange={handleChange}
+                    className="pl-12 min-h-[120px] rounded-xl border-border"
+                  />
                 </div>
               </div>
 
