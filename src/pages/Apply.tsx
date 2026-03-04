@@ -18,8 +18,9 @@ const applicationSchema = z.object({
   loanAmount: z.number({ invalid_type_error: "Loan amount is required" }).positive("Loan amount must be positive"),
   employmentStatus: z.enum(["Employed", "Unemployed", "Self-Employed"], { required_error: "Please select employment status" }),
   monthlyIncome: z.number({ invalid_type_error: "Monthly income is required" }).nonnegative("Income must be 0 or more"),
+  monthlyExpenses: z.number({ invalid_type_error: "Estimated monthly expenses is required" }).nonnegative("Expenses must be 0 or more"),
   dob: z.string().min(1, "Date of birth is required"),
-  notes: z.string().optional(),
+  notes: z.string().min(1, "Additional notes are required").max(1000),
 });
 
 type ApplicationData = z.infer<typeof applicationSchema>;
@@ -34,6 +35,7 @@ const initialForm: ApplicationData = {
   loanAmount: 0,
   employmentStatus: "Employed",
   monthlyIncome: 0,
+  monthlyExpenses: 0,
   dob: "",
   notes: "",
 };
@@ -155,7 +157,7 @@ const Apply = () => {
                 <div className="mt-5">
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} className={inputClass} />
+                    <input type="date" name="dob" placeholder="Date of Birth (Month / Day / Year) *" value={formData.dob} onChange={handleChange} className={inputClass} />
                   </div>
                   {errors.dob && <p className={errorClass}>{errors.dob}</p>}
                 </div>
@@ -192,45 +194,53 @@ const Apply = () => {
                 {errors.loanAmount && <p className={errorClass}>{errors.loanAmount}</p>}
               </div>
 
-              {/* Financial Information */}
-              <div>
-                <h2 className="text-xl font-serif text-foreground mb-6">Financial Information</h2>
-                <div className="grid sm:grid-cols-2 gap-5">
-                  <div>
-                    <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <select name="employmentStatus" value={formData.employmentStatus} onChange={handleChange} className={inputClass + " appearance-none cursor-pointer"}>
-                        <option value="Employed">Employed</option>
-                        <option value="Unemployed">Unemployed</option>
-                        <option value="Self-Employed">Self-Employed</option>
-                      </select>
-                    </div>
-                    {errors.employmentStatus && <p className={errorClass}>{errors.employmentStatus}</p>}
-                  </div>
-                  <div>
-                    <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <input type="number" name="monthlyIncome" placeholder="Monthly Income *" value={formData.monthlyIncome || ""} onChange={handleChange} className={inputClass} min="0" />
-                    </div>
-                    {errors.monthlyIncome && <p className={errorClass}>{errors.monthlyIncome}</p>}
-                  </div>
-                </div>
-              </div>
+               {/* Financial Information */}
+               <div>
+                 <h2 className="text-xl font-serif text-foreground mb-6">Financial Information</h2>
+                 <div className="grid sm:grid-cols-2 gap-5">
+                   <div>
+                     <div className="relative">
+                       <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                       <select name="employmentStatus" value={formData.employmentStatus} onChange={handleChange} className={inputClass + " appearance-none cursor-pointer"}>
+                         <option value="Employed">Employed</option>
+                         <option value="Unemployed">Unemployed</option>
+                         <option value="Self-Employed">Self-Employed</option>
+                       </select>
+                     </div>
+                     {errors.employmentStatus && <p className={errorClass}>{errors.employmentStatus}</p>}
+                   </div>
+                   <div>
+                     <div className="relative">
+                       <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                       <input type="number" name="monthlyIncome" placeholder="Monthly Income *" value={formData.monthlyIncome || ""} onChange={handleChange} className={inputClass} min="0" />
+                     </div>
+                     {errors.monthlyIncome && <p className={errorClass}>{errors.monthlyIncome}</p>}
+                   </div>
+                 </div>
+                 <div className="mt-5">
+                   <div className="relative">
+                     <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                     <input type="number" name="monthlyExpenses" placeholder="Estimated Monthly Expenses *" value={formData.monthlyExpenses || ""} onChange={handleChange} className={inputClass} min="0" />
+                   </div>
+                   {errors.monthlyExpenses && <p className={errorClass}>{errors.monthlyExpenses}</p>}
+                 </div>
+               </div>
 
-              {/* Notes */}
-              <div>
-                <h2 className="text-xl font-serif text-foreground mb-6">Additional Notes</h2>
-                <div className="relative">
-                  <FileText className="absolute left-4 top-4 w-5 h-5 text-muted-foreground" />
-                  <Textarea
-                    name="notes"
-                    placeholder="What is the loan for? When can you pay it back? Any other details..."
-                    value={formData.notes}
-                    onChange={handleChange}
-                    className="pl-12 min-h-[120px] rounded-xl border-border"
-                  />
-                </div>
-              </div>
+               {/* Notes */}
+               <div>
+                 <h2 className="text-xl font-serif text-foreground mb-6">Additional Notes (Required)*</h2>
+                 <div className="relative">
+                   <FileText className="absolute left-4 top-4 w-5 h-5 text-muted-foreground" />
+                   <Textarea
+                     name="notes"
+                     placeholder="Please provide details about: loan purpose, repayment timeline, and any other relevant information..."
+                     value={formData.notes}
+                     onChange={handleChange}
+                     className="pl-12 min-h-[120px] rounded-xl border-border"
+                   />
+                 </div>
+                 {errors.notes && <p className={errorClass}>{errors.notes}</p>}
+               </div>
 
               {/* Submit */}
               <button type="submit" disabled={isSubmitting} className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
