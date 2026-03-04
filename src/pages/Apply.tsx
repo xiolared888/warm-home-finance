@@ -155,9 +155,10 @@ const Apply = () => {
                   </div>
                 </div>
                 <div className="mt-5">
+                  <label className="block text-sm font-medium text-foreground mb-2">Date of Birth (DOB) *</label>
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <input type="date" name="dob" placeholder="Date of Birth (Month / Day / Year) *" value={formData.dob} onChange={handleChange} className={inputClass} />
+                    <input type="date" name="dob" value={formData.dob} onChange={handleChange} className={inputClass} />
                   </div>
                   {errors.dob && <p className={errorClass}>{errors.dob}</p>}
                 </div>
