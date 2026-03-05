@@ -6,7 +6,7 @@ import Footer from "@/components/Footer";
 import { useToast } from "@/hooks/use-toast";
 import { Textarea } from "@/components/ui/textarea";
 
-const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook-test/loan-application";
+const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/loan-application";
 
 const applicationSchema = z.object({
   firstName: z.string().trim().min(1, "First name is required").max(100),
