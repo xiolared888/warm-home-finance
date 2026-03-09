@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -28,70 +28,73 @@ interface Application {
   notes: string;
 }
 
-const sampleApplications: Application[] = [
-  {
-    id: "1",
-    fullName: "Maria Gonzalez",
-    dateSubmitted: new Date().toISOString(),
-    email: "maria.gonzalez@email.com",
-    loanAmount: 3500,
-    status: "Pending",
-    notes: "Need funds for home renovation. Can repay within 12 months.",
-  },
-  {
-    id: "2",
-    fullName: "Daniel Carter",
-    dateSubmitted: new Date().toISOString(),
-    email: "daniel.carter@email.com",
-    loanAmount: 9200,
-    status: "Approved",
-    notes: "Business expansion loan. Quarterly repayment plan preferred.",
-  },
-  {
-    id: "3",
-    fullName: "Jasmine Lee",
-    dateSubmitted: new Date().toISOString(),
-    email: "jasmine.lee@email.com",
-    loanAmount: 1250,
-    status: "Rejected",
-    notes: "Emergency medical expenses.",
-  },
-];
-
 const statusColors: Record<AppStatus, string> = {
   Approved: "bg-emerald-100 text-emerald-700",
   Pending: "bg-amber-100 text-amber-700",
   Rejected: "bg-red-100 text-red-700",
 };
 
+const parseApplications = (data: unknown): Application[] => {
+  // Handle various response shapes from n8n/Airtable
+  const rawList = Array.isArray(data) ? data : (data as any)?.records ?? (data as any)?.data ?? [];
+
+  return rawList.map((item: any, idx: number) => {
+    // Support both flat objects and Airtable-style { fields: { ... } }
+    const fields = item.fields ?? item;
+    return {
+      id: item.id ?? String(idx + 1),
+      fullName: fields.fullName ?? fields["Full Name"] ?? fields.name ?? "",
+      dateSubmitted: fields.dateSubmitted ?? fields["Date Submitted"] ?? fields.date ?? new Date().toISOString(),
+      email: fields.email ?? fields.Email ?? "",
+      loanAmount: Number(fields.loanAmount ?? fields["Loan Amount"] ?? fields.amount ?? 0),
+      status: (fields.status ?? fields.Status ?? "Pending") as AppStatus,
+      notes: fields.notes ?? fields.Notes ?? "",
+    };
+  });
+};
+
 const fireWebhook = async (payload: Record<string, unknown>) => {
   try {
-    await fetch(WEBHOOK_URL, {
+    const res = await fetch(WEBHOOK_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
+    return res;
   } catch {
-    // silently fail for now
+    return null;
   }
 };
 
 const Admin = () => {
-  const [applications, setApplications] = useState<Application[]>(sampleApplications);
+  const [applications, setApplications] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Fire webhook on page load
+  // Fetch data from webhook on page load
   useEffect(() => {
-    const payload = {
-      event: "admin_page_load",
-      fullName: "",
-      dateSubmitted: new Date().toISOString(),
-      email: "",
-      loanAmount: 0,
-      status: "",
-      notes: "",
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await fireWebhook({
+          event: "admin_page_load",
+          timestamp: new Date().toISOString(),
+        });
+
+        if (res && res.ok) {
+          const data = await res.json();
+          const parsed = parseApplications(data);
+          if (parsed.length > 0) {
+            setApplications(parsed);
+          }
+        }
+      } catch {
+        // silent fail
+      } finally {
+        setLoading(false);
+      }
     };
-    fireWebhook(payload);
+    fetchData();
   }, []);
 
   const handleStatusChange = (id: string, newStatus: AppStatus) => {
@@ -99,7 +102,6 @@ const Admin = () => {
       prev.map((app) => {
         if (app.id === id) {
           const updated = { ...app, status: newStatus };
-          // Fire webhook on status change
           fireWebhook({
             event: "status_change",
             fullName: updated.fullName,
@@ -122,7 +124,6 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-muted/30">
-      {/* Top bar */}
       <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6 sticky top-0 z-30">
         <div className="flex items-center gap-4">
           <Link to="/" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
@@ -153,46 +154,63 @@ const Admin = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {applications.map((app) => (
-                  <TableRow key={app.id} className="hover:bg-muted/30 transition-colors">
-                    <TableCell className="font-medium">{app.fullName}</TableCell>
-                    <TableCell>{new Date(app.dateSubmitted).toLocaleDateString()}</TableCell>
-                    <TableCell className="text-muted-foreground">{app.email}</TableCell>
-                    <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={app.status}
-                        onValueChange={(val) => handleStatusChange(app.id, val as AppStatus)}
-                      >
-                        <SelectTrigger className={`w-[130px] h-8 text-xs font-semibold border-0 ${statusColors[app.status]}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pending">Pending</SelectItem>
-                          <SelectItem value="Approved">Approved</SelectItem>
-                          <SelectItem value="Rejected">Rejected</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-xs h-8">
-                            View Notes
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle className="font-serif">{app.fullName} — Notes</DialogTitle>
-                          </DialogHeader>
-                          <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                            {app.notes || "No notes provided."}
-                          </p>
-                        </DialogContent>
-                      </Dialog>
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12">
+                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                        <span>Loading applications...</span>
+                      </div>
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : applications.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                      No applications found. Data will appear here when the webhook returns records from Airtable.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  applications.map((app) => (
+                    <TableRow key={app.id} className="hover:bg-muted/30 transition-colors">
+                      <TableCell className="font-medium">{app.fullName}</TableCell>
+                      <TableCell>{new Date(app.dateSubmitted).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-muted-foreground">{app.email}</TableCell>
+                      <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
+                      <TableCell>
+                        <Select
+                          value={app.status}
+                          onValueChange={(val) => handleStatusChange(app.id, val as AppStatus)}
+                        >
+                          <SelectTrigger className={`w-[130px] h-8 text-xs font-semibold border-0 ${statusColors[app.status]}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Pending">Pending</SelectItem>
+                            <SelectItem value="Approved">Approved</SelectItem>
+                            <SelectItem value="Rejected">Rejected</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="text-xs h-8">
+                              View Notes
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle className="font-serif">{app.fullName} — Notes</DialogTitle>
+                            </DialogHeader>
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                              {app.notes || "No notes provided."}
+                            </p>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>
