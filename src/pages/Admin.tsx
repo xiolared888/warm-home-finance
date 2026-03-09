@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
-const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook-test/loan-application";
+const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook-test/admin-ui-test";
 
 type AppStatus = "Pending" | "Approved" | "Rejected";
 
