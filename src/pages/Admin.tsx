@@ -35,21 +35,19 @@ const statusColors: Record<AppStatus, string> = {
   Denied: "bg-red-100 text-red-700",
 };
 
-const parseApplications = (data: unknown): Application[] => {
-  const rawList = Array.isArray(data) ? data : (data as any)?.records ?? (data as any)?.data ?? [];
+const parseApplications = (response: unknown): Application[] => {
+  const rawList = (response as any)?.data ?? [];
+  if (!Array.isArray(rawList)) return [];
 
-  return rawList.map((item: any, idx: number) => {
-    const fields = item.fields ?? item;
-    return {
-      id: item.id ?? String(idx + 1),
-      fullName: fields.fullName ?? fields["Full Name"] ?? fields.name ?? "",
-      dateSubmitted: fields.dateSubmitted ?? fields["Date Submitted"] ?? fields.date ?? new Date().toISOString(),
-      email: fields.email ?? fields.Email ?? "",
-      loanAmount: Number(fields.loanAmount ?? fields["Loan Amount"] ?? fields.amount ?? 0),
-      status: (fields.status ?? fields.Status ?? "Submitted") as AppStatus,
-      notes: fields.notes ?? fields.Notes ?? "",
-    };
-  });
+  return rawList.map((item: any, idx: number) => ({
+    id: item.id ?? item["Application ID"] ?? String(idx + 1),
+    fullName: item["Full Name"] ?? "",
+    dateSubmitted: item.createdTime ?? new Date().toISOString(),
+    email: item.Email ?? "",
+    loanAmount: Number(item["Loan Amount Requested"] ?? 0),
+    status: (item.Status ?? "Submitted") as AppStatus,
+    notes: "",
+  }));
 };
 
 const fireWebhook = async (payload: Record<string, unknown>) => {
