@@ -79,12 +79,22 @@ const Admin = () => {
       if (res && res.ok) {
         const data = await res.json();
         const parsed = parseApplications(data);
-        if (parsed.length > 0) {
-          setApplications(parsed);
-        }
+        setApplications(parsed);
+      } else {
+        console.error("Webhook response error:", res?.status, res?.statusText);
+        toast({
+          title: "Failed to load applications",
+          description: `Server responded with ${res?.status ?? "no response"}. Check console for details.`,
+          variant: "destructive",
+        });
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error("Webhook fetch error:", err);
+      toast({
+        title: "Connection Error",
+        description: "Could not reach the webhook. Please check CORS settings and try again.",
+        variant: "destructive",
+      });
     } finally {
       setLoading(false);
     }
