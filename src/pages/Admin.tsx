@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
-const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook-test/admin-ui-test";
+const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
 type AppStatus = "Submitted" | "In Review" | "Accepted" | "Denied";
 
