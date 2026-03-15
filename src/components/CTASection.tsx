@@ -15,17 +15,9 @@ const CTASection = () => {
           <h2 className="text-3xl md:text-4xl font-serif text-white mb-6">
             Ready to Take the Next Step?
           </h2>
-          <p className="text-lg text-white/90 mb-8">
-            Whether you're ready to apply or just have questions, we're here for you. Our team is committed to providing friendly, respectful service every step of the way.
+          <p className="text-lg text-white/90">
+            Ready to apply today or contact us via email, form, or telephone if you have any questions.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#contact" className="btn-primary">
-              Contact Us
-            </a>
-            <a href="#contact" className="btn-outline">
-              Contact Us
-            </a>
-          </div>
         </div>
       </div>
     </section>

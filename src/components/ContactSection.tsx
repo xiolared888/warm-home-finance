@@ -9,12 +9,47 @@ const ContactSection = () => {
     message: "",
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatPhone = (phone: string): string => {
+    const digits = phone.replace(/\D/g, "");
+    if (digits.length === 10) {
+      return `${digits.slice(0, 3)}-${digits.slice(3, 6)}-${digits.slice(6)}`;
+    }
+    if (digits.length === 11 && digits.startsWith("1")) {
+      return `${digits.slice(1, 4)}-${digits.slice(4, 7)}-${digits.slice(7)}`;
+    }
+    return phone;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Form submission logic would go here
-    console.log("Form submitted:", formData);
-    alert("Thank you for your message! We'll be in touch soon.");
-    setFormData({ name: "", email: "", phone: "", message: "" });
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        phone: formatPhone(formData.phone),
+        message: formData.message,
+      };
+      const res = await fetch("https://annettepartida.app.n8n.cloud/webhook/contact-form", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        console.error("Contact form error:", res.status, await res.text());
+        alert("Something went wrong. Please try again.");
+      } else {
+        alert("Thank you for your message! We'll be in touch soon.");
+        setFormData({ name: "", email: "", phone: "", message: "" });
+      }
+    } catch (err) {
+      console.error("Contact form fetch failed:", err);
+      alert("Unable to send your message. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (
@@ -89,10 +124,11 @@ const ContactSection = () => {
 
               <button
                 type="submit"
-                className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                Send Message
+                {isSubmitting ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>
