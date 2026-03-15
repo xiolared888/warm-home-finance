@@ -124,10 +124,11 @@ const ContactSection = () => {
 
               <button
                 type="submit"
-                className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2"
+                disabled={isSubmitting}
+                className="btn-primary w-full sm:w-auto flex items-center justify-center gap-2 disabled:opacity-50"
               >
                 <Send className="w-4 h-4" />
-                Send Message
+                {isSubmitting ? "Sending..." : "Send Message"}
               </button>
             </form>
           </div>
