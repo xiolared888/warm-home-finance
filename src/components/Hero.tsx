@@ -20,9 +20,6 @@ const Hero = () => {
             We understand that life happens. Fox Finance offers straightforward installment loans with fair terms and personal service you can trust.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{ animationDelay: "0.4s" }}>
-            <a href="#contact" className="btn-primary">
-              Contact Us
-            </a>
             <a href="#contact" className="btn-outline">
               Contact Us
             </a>
