@@ -64,7 +64,7 @@ const AdminLogin = () => {
                 <Input
                   id="identifier"
                   type="text"
-                  placeholder="admin@foxfinance.com or foxadmin"
+                  placeholder="Enter your Email or Username"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required
