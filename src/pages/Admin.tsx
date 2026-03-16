@@ -69,6 +69,12 @@ const Admin = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    adminAuth.logout();
+    navigate("/admin-login", { replace: true });
+  };
 
   const fetchData = async () => {
     setLoading(true);
