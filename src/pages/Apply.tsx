@@ -74,10 +74,16 @@ const Apply = () => {
 
     setIsSubmitting(true);
     try {
+      const dobParts = result.data.dob.split("-");
+      const formattedDob =
+        dobParts.length === 3 && dobParts[0].length === 4
+          ? `${dobParts[1]}-${dobParts[2]}-${dobParts[0]}`
+          : result.data.dob;
+
       await fetch(WEBHOOK_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(result.data),
+        body: JSON.stringify({ ...result.data, dob: formattedDob }),
       });
       toast({
         title: "Application Submitted",
