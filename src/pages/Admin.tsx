@@ -6,17 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
-type AppStatus = "Submitted" | "In Review" | "Accepted" | "Denied";
-
-const STATUS_OPTIONS: AppStatus[] = ["Submitted", "In Review", "Accepted", "Denied"];
+type AppStatus =
+  | "Submitted"
+  | "Under Review"
+  | "Approved"
+  | "Rejected"
+  | "Documents Requested";
 
 interface Application {
   id: string;
@@ -33,9 +33,10 @@ interface Application {
 
 const statusColors: Record<AppStatus, string> = {
   Submitted: "bg-blue-100 text-blue-700",
-  "In Review": "bg-amber-100 text-amber-700",
-  Accepted: "bg-emerald-100 text-emerald-700",
-  Denied: "bg-red-100 text-red-700",
+  "Under Review": "bg-amber-100 text-amber-700",
+  Approved: "bg-emerald-100 text-emerald-700",
+  Rejected: "bg-red-100 text-red-700",
+  "Documents Requested": "bg-violet-100 text-violet-700",
 };
 
 const parseFiles = (value: unknown): { name: string; url: string }[] => {
@@ -228,22 +229,12 @@ const Admin = () => {
                         <TableCell className="text-muted-foreground">{app.email}</TableCell>
                         <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
                         <TableCell>
-                          <Select
-                            value={app.status}
-                            disabled
+                          <div
+                            aria-label={`Status: ${app.status}`}
+                            className={`inline-flex min-w-[130px] h-8 items-center justify-center rounded-md px-3 text-xs font-semibold opacity-80 cursor-not-allowed ${statusColors[app.status]}`}
                           >
-                            <SelectTrigger
-                              aria-label={`Status: ${app.status}`}
-                              className={`w-[130px] h-8 text-xs font-semibold border-0 opacity-70 cursor-not-allowed ${statusColors[app.status]}`}
-                            >
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {app.status}
+                          </div>
                         </TableCell>
                         <TableCell className="text-center">
                           <div className="flex items-center justify-center gap-2">
