@@ -13,6 +13,7 @@ const applicationSchema = z.object({
   lastName: z.string().trim().min(1, "Last name is required").max(100),
   email: z.string().trim().email("Please enter a valid email").max(255),
   phone: z.string().trim().min(7, "Please enter a valid phone number").max(20),
+  streetAddress: z.string().trim().min(1, "Street address is required").max(255),
   city: z.string().trim().min(1, "City is required").max(100),
   state: z.string().trim().min(1, "State is required").max(50),
   loanAmount: z.number({ invalid_type_error: "Loan amount is required" }).positive("Loan amount must be positive"),
@@ -30,6 +31,7 @@ const initialForm: ApplicationData = {
   lastName: "",
   email: "",
   phone: "",
+  streetAddress: "",
   city: "",
   state: "",
   loanAmount: 0,
@@ -173,6 +175,20 @@ const Apply = () => {
               {/* Address */}
               <div>
                 <h2 className="text-xl font-serif text-foreground mb-6">Address</h2>
+                <div className="mb-5">
+                  <div className="relative">
+                    <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <input
+                      type="text"
+                      name="streetAddress"
+                      placeholder="Enter street address"
+                      value={formData.streetAddress}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+                  {errors.streetAddress && <p className={errorClass}>{errors.streetAddress}</p>}
+                </div>
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
                     <div className="relative">
