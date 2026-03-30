@@ -140,12 +140,6 @@ const Admin = () => {
     fetchData();
   }, []);
 
-  const handleFieldChange = (id: string, field: keyof Application, value: string | number) => {
-    setApplications((prev) =>
-      prev.map((app) => (app.id === id ? { ...app, [field]: value } : app))
-    );
-  };
-
   const toggleDetails = (id: string) => {
     setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
   };
@@ -236,9 +230,12 @@ const Admin = () => {
                         <TableCell>
                           <Select
                             value={app.status}
-                            onValueChange={(val) => handleFieldChange(app.id, "status", val)}
+                            disabled
                           >
-                            <SelectTrigger className={`w-[130px] h-8 text-xs font-semibold border-0 ${statusColors[app.status]}`}>
+                            <SelectTrigger
+                              aria-label={`Status: ${app.status}`}
+                              className={`w-[130px] h-8 text-xs font-semibold border-0 opacity-70 cursor-not-allowed ${statusColors[app.status]}`}
+                            >
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
