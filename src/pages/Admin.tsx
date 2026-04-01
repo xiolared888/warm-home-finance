@@ -11,6 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
+const GET_DETAILS_BASE =
+  "https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details";
+
 type AppStatus =
   | "Submitted"
   | "Under Review"
@@ -25,6 +28,9 @@ interface Application {
   email: string;
   loanAmount: number;
   status: AppStatus;
+}
+
+interface LoanDetails {
   images: { name: string; url: string }[];
   reasonForLoan: string;
   address: string;
@@ -62,21 +68,74 @@ const parseFiles = (value: unknown): { name: string; url: string }[] => {
     .filter((file): file is { name: string; url: string } => Boolean(file));
 };
 
+const parseImages = (value: unknown): { name: string; url: string }[] => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item, idx) => {
+      if (typeof item === "string") {
+        return { name: `Image ${idx + 1}`, url: item };
+      }
+      if (item && typeof item === "object") {
+        const record = item as Record<string, unknown>;
+        const url =
+          typeof record.url === "string"
+            ? record.url
+            : typeof record.src === "string"
+              ? record.src
+              : "";
+        const name =
+          typeof record.name === "string"
+            ? record.name
+            : typeof record.filename === "string"
+              ? record.filename
+              : `Image ${idx + 1}`;
+        return url ? { name, url } : null;
+      }
+      return null;
+    })
+    .filter((img): img is { name: string; url: string } => Boolean(img));
+};
+
+/** Normalize n8n Respond to Webhook body: flat root or nested under `data`. */
+const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
+  let payload: unknown = raw;
+  if (payload && typeof payload === "object" && "data" in payload) {
+    const inner = (payload as { data: unknown }).data;
+    if (inner !== undefined && inner !== null) payload = inner;
+  }
+  if (!payload || typeof payload !== "object") {
+    return { images: [], reasonForLoan: "", address: "", uploadedDocuments: [] };
+  }
+  const o = payload as Record<string, unknown>;
+  return {
+    images: parseImages(o.images),
+    reasonForLoan:
+      typeof o.reasonForLoan === "string"
+        ? o.reasonForLoan
+        : typeof o["Reason for Loan"] === "string"
+          ? o["Reason for Loan"]
+          : "",
+    address:
+      typeof o.address === "string"
+        ? o.address
+        : typeof o.Address === "string"
+          ? o.Address
+          : "",
+    uploadedDocuments: parseFiles(o.uploadedDocuments ?? o["Uploaded Documents"]),
+  };
+};
+
 const parseApplications = (response: unknown): Application[] => {
   const rawList = (response as any)?.data ?? [];
   if (!Array.isArray(rawList)) return [];
 
   return rawList.map((item: any, idx: number) => ({
-    id: item.id ?? item["Application ID"] ?? String(idx + 1),
+    id: item.id ?? item["Application ID"] ?? item.loanId ?? String(idx + 1),
     fullName: item["Full Name"] ?? "",
     dateSubmitted: item.createdTime ?? new Date().toISOString(),
     email: item.Email ?? "",
     loanAmount: Number(item["Loan Amount Requested"] ?? 0),
     status: (item.Status ?? "Submitted") as AppStatus,
-    images: parseFiles(item.Images ?? item["Client Images"]),
-    reasonForLoan: item["Reason for Loan"] ?? "",
-    address: item.Address ?? "",
-    uploadedDocuments: parseFiles(item["Uploaded Documents"] ?? item.Documents),
   }));
 };
 
@@ -93,11 +152,23 @@ const fireWebhook = async (payload: Record<string, unknown>) => {
   }
 };
 
+const fetchLoanDetails = async (loanId: string): Promise<LoanDetails> => {
+  const url = `${GET_DETAILS_BASE}/${encodeURIComponent(loanId)}`;
+  const res = await fetch(url, { method: "GET" });
+  if (!res.ok) {
+    throw new Error(`Request failed (${res.status})`);
+  }
+  const json: unknown = await res.json();
+  return normalizeDetailsResponse(json);
+};
+
 const Admin = () => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
+  const [detailsLoading, setDetailsLoading] = useState<Record<string, boolean>>({});
+  const [detailsError, setDetailsError] = useState<Record<string, string | null>>({});
+  const [detailsByLoanId, setDetailsByLoanId] = useState<Record<string, LoanDetails>>({});
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -141,26 +212,28 @@ const Admin = () => {
     fetchData();
   }, []);
 
-  const toggleDetails = (id: string) => {
-    setExpandedRows((prev) => ({ ...prev, [id]: !prev[id] }));
+  const loadDetails = async (loanId: string) => {
+    setDetailsLoading((prev) => ({ ...prev, [loanId]: true }));
+    setDetailsError((prev) => ({ ...prev, [loanId]: null }));
+    try {
+      const details = await fetchLoanDetails(loanId);
+      setDetailsByLoanId((prev) => ({ ...prev, [loanId]: details }));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Could not load details";
+      setDetailsError((prev) => ({ ...prev, [loanId]: message }));
+    } finally {
+      setDetailsLoading((prev) => ({ ...prev, [loanId]: false }));
+    }
   };
 
-  const handleUpdate = async (app: Application) => {
-    setUpdating(app.id);
-    await fireWebhook({
-      event: "application_update",
-      id: app.id,
-      fullName: app.fullName,
-      dateSubmitted: app.dateSubmitted,
-      email: app.email,
-      loanAmount: app.loanAmount,
-      status: app.status,
+  const handleToggleDetails = (loanId: string) => {
+    setExpandedRows((prev) => {
+      const opening = !prev[loanId];
+      if (opening) {
+        void loadDetails(loanId);
+      }
+      return { ...prev, [loanId]: opening };
     });
-    toast({
-      title: "Update Sent",
-      description: `${app.fullName || "Application"} update sent to webhook`,
-    });
-    setUpdating(null);
   };
 
   return (
@@ -221,102 +294,119 @@ const Admin = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  applications.map((app) => (
-                    <Fragment key={app.id}>
-                      <TableRow className="hover:bg-muted/30 transition-colors align-top">
-                        <TableCell className="font-medium">{app.fullName}</TableCell>
-                        <TableCell>{new Date(app.dateSubmitted).toLocaleDateString()}</TableCell>
-                        <TableCell className="text-muted-foreground">{app.email}</TableCell>
-                        <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
-                        <TableCell>
-                          <div
-                            aria-label={`Status: ${app.status}`}
-                            className={`inline-flex min-w-[130px] h-8 items-center justify-center rounded-md px-3 text-xs font-semibold opacity-80 cursor-not-allowed ${statusColors[app.status]}`}
-                          >
-                            {app.status}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
+                  applications.map((app) => {
+                    const loanId = app.id;
+                    const details = detailsByLoanId[loanId];
+                    const detailLoading = detailsLoading[loanId];
+                    const detailErr = detailsError[loanId];
+
+                    return (
+                      <Fragment key={loanId}>
+                        <TableRow className="hover:bg-muted/30 transition-colors align-top">
+                          <TableCell className="font-medium">{app.fullName}</TableCell>
+                          <TableCell>{new Date(app.dateSubmitted).toLocaleDateString()}</TableCell>
+                          <TableCell className="text-muted-foreground">{app.email}</TableCell>
+                          <TableCell>${app.loanAmount.toLocaleString()}</TableCell>
+                          <TableCell>
+                            <div
+                              aria-label={`Status: ${app.status}`}
+                              className={`inline-flex min-w-[130px] h-8 items-center justify-center rounded-md px-3 text-xs font-semibold opacity-80 cursor-not-allowed ${statusColors[app.status] ?? "bg-muted text-muted-foreground"}`}
+                            >
+                              {app.status}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center">
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={() => toggleDetails(app.id)}
+                              onClick={() => handleToggleDetails(loanId)}
                               className="text-xs h-8"
                             >
-                              {expandedRows[app.id] ? "Hide details" : "Show details"}
+                              {expandedRows[loanId] ? "Hide details" : "Show details"}
                             </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => handleUpdate(app)}
-                              disabled={updating === app.id}
-                              className="text-xs h-8"
-                            >
-                              {updating === app.id ? (
-                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                              ) : null}
-                              Update
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedRows[app.id] ? (
-                        <TableRow className="bg-muted/20">
-                          <TableCell colSpan={6} className="border-t-0">
-                            <div className="rounded-md border border-border bg-background p-4 space-y-4">
-                              <div>
-                                <p className="text-sm font-semibold text-foreground mb-2">Images</p>
-                                {app.images.length > 0 ? (
-                                  <div className="flex flex-wrap gap-3">
-                                    {app.images.map((image, index) => (
-                                      <a key={`${app.id}-image-${index}`} href={image.url} target="_blank" rel="noreferrer" className="block">
-                                        <img
-                                          src={image.url}
-                                          alt={image.name}
-                                          className="h-24 w-24 rounded-md object-cover border border-border"
-                                        />
-                                      </a>
-                                    ))}
-                                  </div>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground">No images uploaded</p>
-                                )}
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-foreground">Reason for Loan</p>
-                                <p className="text-sm text-muted-foreground mt-1">{app.reasonForLoan || "Not provided"}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-foreground">Address</p>
-                                <p className="text-sm text-muted-foreground mt-1">{app.address || "Not provided"}</p>
-                              </div>
-                              <div>
-                                <p className="text-sm font-semibold text-foreground mb-2">Uploaded Documents</p>
-                                {app.uploadedDocuments.length > 0 ? (
-                                  <ul className="space-y-1">
-                                    {app.uploadedDocuments.map((doc, index) => (
-                                      <li key={`${app.id}-doc-${index}`}>
-                                        <a
-                                          href={doc.url}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="text-sm text-primary underline-offset-2 hover:underline"
-                                        >
-                                          {doc.name}
-                                        </a>
-                                      </li>
-                                    ))}
-                                  </ul>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground">No documents uploaded</p>
-                                )}
-                              </div>
-                            </div>
                           </TableCell>
                         </TableRow>
-                      ) : null}
-                    </Fragment>
-                  ))
+                        {expandedRows[loanId] ? (
+                          <TableRow className="bg-muted/20">
+                            <TableCell colSpan={6} className="border-t-0">
+                              <div className="rounded-md border border-border bg-background p-4 space-y-4">
+                                {detailLoading ? (
+                                  <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                    <span>Loading details...</span>
+                                  </div>
+                                ) : detailErr ? (
+                                  <p className="text-sm text-destructive py-2">{detailErr}</p>
+                                ) : details ? (
+                                  <>
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground mb-2">Images</p>
+                                      {details.images.length > 0 ? (
+                                        <div className="flex flex-wrap gap-3">
+                                          {details.images.map((image, index) => (
+                                            <a
+                                              key={`${loanId}-image-${index}`}
+                                              href={image.url}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              className="block"
+                                            >
+                                              <img
+                                                src={image.url}
+                                                alt={image.name}
+                                                className="h-24 w-24 rounded-md object-cover border border-border"
+                                              />
+                                            </a>
+                                          ))}
+                                        </div>
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground">No images uploaded</p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground">Reason for Loan</p>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {details.reasonForLoan.trim() ? details.reasonForLoan : "Not provided"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground">Address</p>
+                                      <p className="text-sm text-muted-foreground mt-1">
+                                        {details.address.trim() ? details.address : "Not provided"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-sm font-semibold text-foreground mb-2">Uploaded Documents</p>
+                                      {details.uploadedDocuments.length > 0 ? (
+                                        <ul className="space-y-1">
+                                          {details.uploadedDocuments.map((doc, index) => (
+                                            <li key={`${loanId}-doc-${index}`}>
+                                              <a
+                                                href={doc.url}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="text-sm text-primary underline-offset-2 hover:underline"
+                                              >
+                                                {doc.name}
+                                              </a>
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground">No documents uploaded</p>
+                                      )}
+                                    </div>
+                                  </>
+                                ) : (
+                                  <p className="text-sm text-muted-foreground py-2">No details available.</p>
+                                )}
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ) : null}
+                      </Fragment>
+                    );
+                  })
                 )}
               </TableBody>
             </Table>
