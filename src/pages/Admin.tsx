@@ -16,7 +16,7 @@ const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test"
  * https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:loan-id
  */
 const getLoanDetailsWebhookUrl = (loanId: string) =>
-  `https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:load-id;
+  `https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/${encodeURIComponent(loanId)}`;
 
 type AppStatus =
   | "Submitted"
