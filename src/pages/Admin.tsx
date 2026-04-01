@@ -11,8 +11,12 @@ import { useToast } from "@/hooks/use-toast";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
-const GET_DETAILS_BASE =
-  "https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details";
+/**
+ * Show details: GET (replace :loan-id with the row’s loan ID, URL-encoded).
+ * https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:loan-id
+ */
+const getLoanDetailsWebhookUrl = (loanId: string) =>
+  `https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:load-id;
 
 type AppStatus =
   | "Submitted"
@@ -153,12 +157,16 @@ const fireWebhook = async (payload: Record<string, unknown>) => {
 };
 
 const fetchLoanDetails = async (loanId: string): Promise<LoanDetails> => {
-  const url = `${GET_DETAILS_BASE}/${encodeURIComponent(loanId)}`;
-  const res = await fetch(url, { method: "GET" });
+  const res = await fetch(getLoanDetailsWebhookUrl(loanId), { method: "GET" });
   if (!res.ok) {
     throw new Error(`Request failed (${res.status})`);
   }
-  const json: unknown = await res.json();
+  let json: unknown;
+  try {
+    json = await res.json();
+  } catch {
+    throw new Error("Invalid response from server");
+  }
   return normalizeDetailsResponse(json);
 };
 
