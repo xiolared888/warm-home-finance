@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, RefreshCw, LogOut } from "lucide-react";
 import { adminAuth } from "@/lib/adminAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LoanDetailsPanel, { type LoanDetails } from "@/components/LoanDetailsPanel";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -11,10 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
-/**
- * Show details: GET (replace :loan-id with the row’s loan ID, URL-encoded).
- * https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:loan-id
- */
 const getLoanDetailsWebhookUrl = (loanId: string) =>
   `https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/${encodeURIComponent(loanId)}`;
 
@@ -34,13 +31,6 @@ interface Application {
   status: AppStatus;
 }
 
-interface LoanDetails {
-  images: { name: string; url: string }[];
-  reasonForLoan: string;
-  address: string;
-  uploadedDocuments: { name: string; url: string }[];
-}
-
 const statusColors: Record<AppStatus, string> = {
   Submitted: "bg-blue-100 text-blue-700",
   "Under Review": "bg-amber-100 text-amber-700",
@@ -49,58 +39,6 @@ const statusColors: Record<AppStatus, string> = {
   "Documents Requested": "bg-violet-100 text-violet-700",
 };
 
-const parseFiles = (value: unknown): { name: string; url: string }[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((file, idx) => {
-      if (typeof file === "string") {
-        return { name: `File ${idx + 1}`, url: file };
-      }
-      if (file && typeof file === "object") {
-        const record = file as Record<string, unknown>;
-        const url = typeof record.url === "string" ? record.url : "";
-        const name =
-          typeof record.filename === "string"
-            ? record.filename
-            : typeof record.name === "string"
-              ? record.name
-              : `File ${idx + 1}`;
-        return url ? { name, url } : null;
-      }
-      return null;
-    })
-    .filter((file): file is { name: string; url: string } => Boolean(file));
-};
-
-const parseImages = (value: unknown): { name: string; url: string }[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item, idx) => {
-      if (typeof item === "string") {
-        return { name: `Image ${idx + 1}`, url: item };
-      }
-      if (item && typeof item === "object") {
-        const record = item as Record<string, unknown>;
-        const url =
-          typeof record.url === "string"
-            ? record.url
-            : typeof record.src === "string"
-              ? record.src
-              : "";
-        const name =
-          typeof record.name === "string"
-            ? record.name
-            : typeof record.filename === "string"
-              ? record.filename
-              : `Image ${idx + 1}`;
-        return url ? { name, url } : null;
-      }
-      return null;
-    })
-    .filter((img): img is { name: string; url: string } => Boolean(img));
-};
-
-/** Normalize n8n Respond to Webhook body: flat root or nested under `data`. */
 const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
   let payload: unknown = raw;
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -108,24 +46,32 @@ const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
     if (inner !== undefined && inner !== null) payload = inner;
   }
   if (!payload || typeof payload !== "object") {
-    return { images: [], reasonForLoan: "", address: "", uploadedDocuments: [] };
+    return { reasonForLoan: "", address: "", dateOfBirth: "", documents: [] };
   }
   const o = payload as Record<string, unknown>;
+
+  const rawDocs = Array.isArray(o.documents) ? o.documents : [];
+  const documents = rawDocs.map((d: any) => ({
+    document: typeof d?.document === "string" ? d.document : "Untitled",
+    download_urls: Array.isArray(d?.download_urls)
+      ? d.download_urls.filter((u: unknown) => typeof u === "string")
+      : [],
+  }));
+
   return {
-    images: parseImages(o.images),
     reasonForLoan:
-      typeof o.reasonForLoan === "string"
-        ? o.reasonForLoan
-        : typeof o["Reason for Loan"] === "string"
-          ? o["Reason for Loan"]
-          : "",
+      typeof o.reasonForLoan === "string" ? o.reasonForLoan
+      : typeof o["Reason for Loan"] === "string" ? o["Reason for Loan"]
+      : "",
     address:
-      typeof o.address === "string"
-        ? o.address
-        : typeof o.Address === "string"
-          ? o.Address
-          : "",
-    uploadedDocuments: parseFiles(o.uploadedDocuments ?? o["Uploaded Documents"]),
+      typeof o.address === "string" ? o.address
+      : typeof o.Address === "string" ? o.Address
+      : "",
+    dateOfBirth:
+      typeof o.dateOfBirth === "string" ? o.dateOfBirth
+      : typeof o.date_of_birth === "string" ? o.date_of_birth
+      : "",
+    documents,
   };
 };
 
@@ -336,79 +282,13 @@ const Admin = () => {
                         </TableRow>
                         {expandedRows[loanId] ? (
                           <TableRow className="bg-muted/20">
-                            <TableCell colSpan={6} className="border-t-0">
-                              <div className="rounded-md border border-border bg-background p-4 space-y-4">
-                                {detailLoading ? (
-                                  <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Loading details...</span>
-                                  </div>
-                                ) : detailErr ? (
-                                  <p className="text-sm text-destructive py-2">{detailErr}</p>
-                                ) : details ? (
-                                  <>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground mb-2">Images</p>
-                                      {details.images.length > 0 ? (
-                                        <div className="flex flex-wrap gap-3">
-                                          {details.images.map((image, index) => (
-                                            <a
-                                              key={`${loanId}-image-${index}`}
-                                              href={image.url}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="block"
-                                            >
-                                              <img
-                                                src={image.url}
-                                                alt={image.name}
-                                                className="h-24 w-24 rounded-md object-cover border border-border"
-                                              />
-                                            </a>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">No images uploaded</p>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground">Reason for Loan</p>
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        {details.reasonForLoan.trim() ? details.reasonForLoan : "Not provided"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground">Address</p>
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        {details.address.trim() ? details.address : "Not provided"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground mb-2">Uploaded Documents</p>
-                                      {details.uploadedDocuments.length > 0 ? (
-                                        <ul className="space-y-1">
-                                          {details.uploadedDocuments.map((doc, index) => (
-                                            <li key={`${loanId}-doc-${index}`}>
-                                              <a
-                                                href={doc.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-sm text-primary underline-offset-2 hover:underline"
-                                              >
-                                                {doc.name}
-                                              </a>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">No documents uploaded</p>
-                                      )}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground py-2">No details available.</p>
-                                )}
-                              </div>
+                            <TableCell colSpan={6} className="border-t-0 p-3">
+                              <LoanDetailsPanel
+                                loading={!!detailLoading}
+                                error={detailErr ?? null}
+                                details={details ?? null}
+                                loanId={loanId}
+                              />
                             </TableCell>
                           </TableRow>
                         ) : null}
