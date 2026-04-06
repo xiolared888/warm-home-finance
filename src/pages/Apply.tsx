@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Send, User, Mail, Phone, MapPin, DollarSign, Briefcase, Calendar, FileText } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { Send, User, Mail, Phone, MapPin, DollarSign, Briefcase, Calendar, FileText, ChevronDown } from "lucide-react";
 import { z } from "zod";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
@@ -15,6 +15,7 @@ const applicationSchema = z.object({
   phone: z.string().trim().min(7, "Please enter a valid phone number").max(20),
   streetAddress: z.string().trim().min(1, "Street address is required").max(255),
   city: z.string().trim().min(1, "City is required").max(100),
+  zipCode: z.string().trim().min(5, "Zip code is required").max(10),
   state: z.string().trim().min(1, "State is required").max(50),
   loanAmount: z.number({ invalid_type_error: "Loan amount is required" }).positive("Loan amount must be positive"),
   employmentStatus: z.enum(["Employed", "Unemployed", "Self-Employed"], { required_error: "Please select employment status" }),
@@ -33,6 +34,7 @@ const initialForm: ApplicationData = {
   phone: "",
   streetAddress: "",
   city: "",
+  zipCode: "",
   state: "",
   loanAmount: 0,
   employmentStatus: "Employed",
@@ -189,7 +191,7 @@ const Apply = () => {
                   </div>
                   {errors.streetAddress && <p className={errorClass}>{errors.streetAddress}</p>}
                 </div>
-                <div className="grid sm:grid-cols-2 gap-5">
+                <div className="grid sm:grid-cols-3 gap-5">
                   <div>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
@@ -200,8 +202,19 @@ const Apply = () => {
                   <div>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <input type="text" name="state" placeholder="State *" value={formData.state} onChange={handleChange} className={inputClass} />
+                      <input type="text" name="zipCode" placeholder="Zip Code *" value={formData.zipCode} onChange={handleChange} className={inputClass} maxLength={10} />
                     </div>
+                    {errors.zipCode && <p className={errorClass}>{errors.zipCode}</p>}
+                  </div>
+                  <div>
+                    <StateDropdown
+                      value={formData.state}
+                      onChange={(val) => {
+                        setFormData((prev) => ({ ...prev, state: val }));
+                        if (errors.state) setErrors((prev) => ({ ...prev, state: undefined }));
+                      }}
+                      inputClass={inputClass}
+                    />
                     {errors.state && <p className={errorClass}>{errors.state}</p>}
                   </div>
                 </div>
