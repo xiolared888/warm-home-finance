@@ -12,10 +12,6 @@ import { useToast } from "@/hooks/use-toast";
 
 const WEBHOOK_URL = "https://annettepartida.app.n8n.cloud/webhook/admin-ui-test";
 
-/**
- * Show details: GET (replace :loan-id with the row’s loan ID, URL-encoded).
- * https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/:loan-id
- */
 const getLoanDetailsWebhookUrl = (loanId: string) =>
   `https://annettepartida.app.n8n.cloud/webhook/97284c1f-4486-43a3-854a-19e0251e705a/get_details/${encodeURIComponent(loanId)}`;
 
@@ -35,8 +31,6 @@ interface Application {
   status: AppStatus;
 }
 
-// LoanDetails type is imported from LoanDetailsPanel
-
 const statusColors: Record<AppStatus, string> = {
   Submitted: "bg-blue-100 text-blue-700",
   "Under Review": "bg-amber-100 text-amber-700",
@@ -45,7 +39,6 @@ const statusColors: Record<AppStatus, string> = {
   "Documents Requested": "bg-violet-100 text-violet-700",
 };
 
-/** Normalize n8n details response into LoanDetails */
 const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
   let payload: unknown = raw;
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -57,7 +50,6 @@ const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
   }
   const o = payload as Record<string, unknown>;
 
-  // Parse documents array
   const rawDocs = Array.isArray(o.documents) ? o.documents : [];
   const documents = rawDocs.map((d: any) => ({
     document: typeof d?.document === "string" ? d.document : "Untitled",
@@ -290,79 +282,13 @@ const Admin = () => {
                         </TableRow>
                         {expandedRows[loanId] ? (
                           <TableRow className="bg-muted/20">
-                            <TableCell colSpan={6} className="border-t-0">
-                              <div className="rounded-md border border-border bg-background p-4 space-y-4">
-                                {detailLoading ? (
-                                  <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Loading details...</span>
-                                  </div>
-                                ) : detailErr ? (
-                                  <p className="text-sm text-destructive py-2">{detailErr}</p>
-                                ) : details ? (
-                                  <>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground mb-2">Images</p>
-                                      {details.images.length > 0 ? (
-                                        <div className="flex flex-wrap gap-3">
-                                          {details.images.map((image, index) => (
-                                            <a
-                                              key={`${loanId}-image-${index}`}
-                                              href={image.url}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              className="block"
-                                            >
-                                              <img
-                                                src={image.url}
-                                                alt={image.name}
-                                                className="h-24 w-24 rounded-md object-cover border border-border"
-                                              />
-                                            </a>
-                                          ))}
-                                        </div>
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">No images uploaded</p>
-                                      )}
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground">Reason for Loan</p>
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        {details.reasonForLoan.trim() ? details.reasonForLoan : "Not provided"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground">Address</p>
-                                      <p className="text-sm text-muted-foreground mt-1">
-                                        {details.address.trim() ? details.address : "Not provided"}
-                                      </p>
-                                    </div>
-                                    <div>
-                                      <p className="text-sm font-semibold text-foreground mb-2">Uploaded Documents</p>
-                                      {details.uploadedDocuments.length > 0 ? (
-                                        <ul className="space-y-1">
-                                          {details.uploadedDocuments.map((doc, index) => (
-                                            <li key={`${loanId}-doc-${index}`}>
-                                              <a
-                                                href={doc.url}
-                                                target="_blank"
-                                                rel="noreferrer"
-                                                className="text-sm text-primary underline-offset-2 hover:underline"
-                                              >
-                                                {doc.name}
-                                              </a>
-                                            </li>
-                                          ))}
-                                        </ul>
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">No documents uploaded</p>
-                                      )}
-                                    </div>
-                                  </>
-                                ) : (
-                                  <p className="text-sm text-muted-foreground py-2">No details available.</p>
-                                )}
-                              </div>
+                            <TableCell colSpan={6} className="border-t-0 p-3">
+                              <LoanDetailsPanel
+                                loading={!!detailLoading}
+                                error={detailErr ?? null}
+                                details={details ?? null}
+                                loanId={loanId}
+                              />
                             </TableCell>
                           </TableRow>
                         ) : null}
