@@ -44,6 +44,63 @@ const initialForm: ApplicationData = {
   notes: "",
 };
 
+const US_STATES = [
+  "Alabama","Alaska","Arizona","Arkansas","California","Colorado","Connecticut","Delaware","Florida","Georgia",
+  "Hawaii","Idaho","Illinois","Indiana","Iowa","Kansas","Kentucky","Louisiana","Maine","Maryland",
+  "Massachusetts","Michigan","Minnesota","Mississippi","Missouri","Montana","Nebraska","Nevada","New Hampshire","New Jersey",
+  "New Mexico","New York","North Carolina","North Dakota","Ohio","Oklahoma","Oregon","Pennsylvania","Rhode Island","South Carolina",
+  "South Dakota","Tennessee","Texas","Utah","Vermont","Virginia","Washington","West Virginia","Wisconsin","Wyoming",
+];
+
+const StateDropdown = ({ value, onChange, inputClass }: { value: string; onChange: (v: string) => void; inputClass: string }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const filtered = US_STATES.filter((s) => s.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="relative" ref={ref}>
+      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground z-10" />
+      <input
+        type="text"
+        placeholder="State *"
+        value={open ? search : value}
+        onFocus={() => { setOpen(true); setSearch(""); }}
+        onChange={(e) => setSearch(e.target.value)}
+        className={inputClass}
+        autoComplete="off"
+      />
+      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+      {open && (
+        <ul className="absolute z-50 mt-1 w-full max-h-48 overflow-auto rounded-xl border border-border bg-white shadow-lg">
+          {filtered.length === 0 ? (
+            <li className="px-4 py-3 text-sm text-muted-foreground">No match</li>
+          ) : (
+            filtered.map((s) => (
+              <li
+                key={s}
+                className={`px-4 py-2.5 text-sm cursor-pointer hover:bg-accent/10 ${s === value ? "bg-accent/20 font-medium" : ""}`}
+                onMouseDown={() => { onChange(s); setOpen(false); setSearch(""); }}
+              >
+                {s}
+              </li>
+            ))
+          )}
+        </ul>
+      )}
+    </div>
+  );
+};
+
 const Apply = () => {
   const [formData, setFormData] = useState<ApplicationData>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof ApplicationData, string>>>({});
