@@ -71,6 +71,7 @@ const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
       typeof o.dateOfBirth === "string" ? o.dateOfBirth
       : typeof o.date_of_birth === "string" ? o.date_of_birth
       : "",
+    denialReason: typeof o.denialReason === "string" ? o.denialReason : "",
     documents,
   };
 };

@@ -11,6 +11,7 @@ export interface LoanDetails {
   reasonForLoan: string;
   address: string;
   dateOfBirth: string;
+  denialReason?: string;
   documents: DocumentItem[];
 }
 
@@ -89,6 +90,17 @@ const LoanDetailsPanel = ({ loading, error, details, loanId }: LoanDetailsPanelP
             </p>
           </div>
         </div>
+
+        {/* Denial Reason */}
+        {details.denialReason?.trim() && (
+          <>
+            <div className="border-t border-border" />
+            <div className="rounded-md border border-destructive/30 bg-destructive/5 p-4 space-y-1">
+              <p className="text-xs font-medium text-destructive uppercase tracking-wide">Denial Reason</p>
+              <p className="text-sm text-destructive">{details.denialReason}</p>
+            </div>
+          </>
+        )}
 
         {/* Separator */}
         <div className="border-t border-border" />
