@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Loader2, RefreshCw, LogOut } from "lucide-react";
 import { adminAuth } from "@/lib/adminAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import LoanDetailsPanel, { type LoanDetails } from "@/components/LoanDetailsPanel";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
@@ -34,12 +35,7 @@ interface Application {
   status: AppStatus;
 }
 
-interface LoanDetails {
-  images: { name: string; url: string }[];
-  reasonForLoan: string;
-  address: string;
-  uploadedDocuments: { name: string; url: string }[];
-}
+// LoanDetails type is imported from LoanDetailsPanel
 
 const statusColors: Record<AppStatus, string> = {
   Submitted: "bg-blue-100 text-blue-700",
@@ -49,58 +45,7 @@ const statusColors: Record<AppStatus, string> = {
   "Documents Requested": "bg-violet-100 text-violet-700",
 };
 
-const parseFiles = (value: unknown): { name: string; url: string }[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((file, idx) => {
-      if (typeof file === "string") {
-        return { name: `File ${idx + 1}`, url: file };
-      }
-      if (file && typeof file === "object") {
-        const record = file as Record<string, unknown>;
-        const url = typeof record.url === "string" ? record.url : "";
-        const name =
-          typeof record.filename === "string"
-            ? record.filename
-            : typeof record.name === "string"
-              ? record.name
-              : `File ${idx + 1}`;
-        return url ? { name, url } : null;
-      }
-      return null;
-    })
-    .filter((file): file is { name: string; url: string } => Boolean(file));
-};
-
-const parseImages = (value: unknown): { name: string; url: string }[] => {
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((item, idx) => {
-      if (typeof item === "string") {
-        return { name: `Image ${idx + 1}`, url: item };
-      }
-      if (item && typeof item === "object") {
-        const record = item as Record<string, unknown>;
-        const url =
-          typeof record.url === "string"
-            ? record.url
-            : typeof record.src === "string"
-              ? record.src
-              : "";
-        const name =
-          typeof record.name === "string"
-            ? record.name
-            : typeof record.filename === "string"
-              ? record.filename
-              : `Image ${idx + 1}`;
-        return url ? { name, url } : null;
-      }
-      return null;
-    })
-    .filter((img): img is { name: string; url: string } => Boolean(img));
-};
-
-/** Normalize n8n Respond to Webhook body: flat root or nested under `data`. */
+/** Normalize n8n details response into LoanDetails */
 const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
   let payload: unknown = raw;
   if (payload && typeof payload === "object" && "data" in payload) {
@@ -108,24 +53,33 @@ const normalizeDetailsResponse = (raw: unknown): LoanDetails => {
     if (inner !== undefined && inner !== null) payload = inner;
   }
   if (!payload || typeof payload !== "object") {
-    return { images: [], reasonForLoan: "", address: "", uploadedDocuments: [] };
+    return { reasonForLoan: "", address: "", dateOfBirth: "", documents: [] };
   }
   const o = payload as Record<string, unknown>;
+
+  // Parse documents array
+  const rawDocs = Array.isArray(o.documents) ? o.documents : [];
+  const documents = rawDocs.map((d: any) => ({
+    document: typeof d?.document === "string" ? d.document : "Untitled",
+    download_urls: Array.isArray(d?.download_urls)
+      ? d.download_urls.filter((u: unknown) => typeof u === "string")
+      : [],
+  }));
+
   return {
-    images: parseImages(o.images),
     reasonForLoan:
-      typeof o.reasonForLoan === "string"
-        ? o.reasonForLoan
-        : typeof o["Reason for Loan"] === "string"
-          ? o["Reason for Loan"]
-          : "",
+      typeof o.reasonForLoan === "string" ? o.reasonForLoan
+      : typeof o["Reason for Loan"] === "string" ? o["Reason for Loan"]
+      : "",
     address:
-      typeof o.address === "string"
-        ? o.address
-        : typeof o.Address === "string"
-          ? o.Address
-          : "",
-    uploadedDocuments: parseFiles(o.uploadedDocuments ?? o["Uploaded Documents"]),
+      typeof o.address === "string" ? o.address
+      : typeof o.Address === "string" ? o.Address
+      : "",
+    dateOfBirth:
+      typeof o.dateOfBirth === "string" ? o.dateOfBirth
+      : typeof o.date_of_birth === "string" ? o.date_of_birth
+      : "",
+    documents,
   };
 };
 
