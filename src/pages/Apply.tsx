@@ -321,7 +321,12 @@ const Apply = () => {
 
                {/* Notes */}
                <div>
-                 <h2 className="text-xl font-serif text-foreground mb-6">Additional Notes (Required)*</h2>
+                 <h2 className="text-xl font-serif text-foreground mb-2">
+                   Additional Notes <span className="text-destructive font-bold uppercase tracking-wide">REQUIRED</span>
+                 </h2>
+                 <p className="text-[0.7rem] leading-relaxed text-muted-foreground/70 mb-5">
+                   Please describe what the loan amount will be used for. If you are paying off a bill, be prepared to provide a copy of the bill in future correspondence. Also include your expected repayment timeline. Your request cannot be processed without this information.
+                 </p>
                  <div className="relative">
                    <FileText className="absolute left-4 top-4 w-5 h-5 text-muted-foreground" />
                    <Textarea
