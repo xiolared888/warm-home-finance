@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { Loader2, FileText, ImageIcon } from "lucide-react";
+import { Loader2, FileText, ImageIcon, Download, FileType } from "lucide-react";
 import ImageLightbox from "./ImageLightbox";
+
+const getFileType = (url: string): "image" | "pdf" | "docx" | "other" => {
+  const lower = url.toLowerCase().split("?")[0];
+  if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lower)) return "image";
+  if (/\.pdf$/.test(lower)) return "pdf";
+  if (/\.(docx?|doc)$/.test(lower)) return "docx";
+  return "other";
+};
+
+const getFileExt = (url: string): string => {
+  const match = url.toLowerCase().split("?")[0].match(/\.(\w+)$/);
+  return match ? match[1].toUpperCase() : "FILE";
+};
 
 interface DocumentItem {
   document: string;
