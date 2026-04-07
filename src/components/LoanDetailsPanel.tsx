@@ -1,6 +1,19 @@
 import { useState } from "react";
-import { Loader2, FileText, ImageIcon } from "lucide-react";
+import { Loader2, FileText, ImageIcon, Download, FileType } from "lucide-react";
 import ImageLightbox from "./ImageLightbox";
+
+const getFileType = (url: string): "image" | "pdf" | "docx" | "other" => {
+  const lower = url.toLowerCase().split("?")[0];
+  if (/\.(png|jpg|jpeg|gif|webp|bmp|svg)$/.test(lower)) return "image";
+  if (/\.pdf$/.test(lower)) return "pdf";
+  if (/\.(docx?|doc)$/.test(lower)) return "docx";
+  return "other";
+};
+
+const getFileExt = (url: string): string => {
+  const match = url.toLowerCase().split("?")[0].match(/\.(\w+)$/);
+  return match ? match[1].toUpperCase() : "FILE";
+};
 
 interface DocumentItem {
   document: string;
@@ -117,9 +130,12 @@ const LoanDetailsPanel = ({ loading, error, details, loanId }: LoanDetailsPanelP
           ) : (
             <div className="space-y-4">
               {details.documents.map((doc, docIdx) => {
-                const allImages = doc.download_urls
+                const allFiles = doc.download_urls
                   ?.filter((url) => typeof url === "string" && url.trim())
-                  .map((url, i) => ({ name: `${doc.document} — ${i + 1}`, url })) ?? [];
+                  .map((url, i) => ({ name: `${doc.document} — ${i + 1}`, url, type: getFileType(url) })) ?? [];
+
+                const imageFiles = allFiles.filter((f) => f.type === "image");
+                const nonImageFiles = allFiles.filter((f) => f.type !== "image");
 
                 return (
                   <div key={`${loanId}-doc-${docIdx}`} className="rounded-md border border-border/60 bg-muted/20 p-3">
@@ -128,12 +144,13 @@ const LoanDetailsPanel = ({ loading, error, details, loanId }: LoanDetailsPanelP
                       {doc.document}
                     </p>
 
-                    {allImages.length > 0 ? (
+                    {allFiles.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
-                        {allImages.map((img, imgIdx) => (
+                        {/* Image thumbnails */}
+                        {imageFiles.map((img, imgIdx) => (
                           <button
                             key={`${loanId}-doc-${docIdx}-img-${imgIdx}`}
-                            onClick={() => openLightbox(allImages, imgIdx)}
+                            onClick={() => openLightbox(imageFiles, imgIdx)}
                             className="group relative h-20 w-20 rounded-md overflow-hidden border border-border hover:border-primary/50 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
                           >
                             <img
@@ -150,6 +167,29 @@ const LoanDetailsPanel = ({ loading, error, details, loanId }: LoanDetailsPanelP
                               }}
                             />
                           </button>
+                        ))}
+
+                        {/* Non-image files (PDF, DOCX, etc.) */}
+                        {nonImageFiles.map((file, fileIdx) => (
+                          <a
+                            key={`${loanId}-doc-${docIdx}-file-${fileIdx}`}
+                            href={file.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="group flex flex-col items-center justify-center h-20 w-20 rounded-md border border-border hover:border-primary/50 bg-muted/40 hover:bg-muted/60 transition-colors focus:outline-none focus:ring-2 focus:ring-primary/50"
+                            title={`Open ${file.name}`}
+                          >
+                            {file.type === "pdf" ? (
+                              <FileText className="w-6 h-6 text-red-500 mb-1" />
+                            ) : file.type === "docx" ? (
+                              <FileType className="w-6 h-6 text-blue-500 mb-1" />
+                            ) : (
+                              <Download className="w-6 h-6 text-muted-foreground mb-1" />
+                            )}
+                            <span className="text-[10px] font-semibold text-muted-foreground">
+                              {getFileExt(file.url)}
+                            </span>
+                          </a>
                         ))}
                       </div>
                     ) : (
