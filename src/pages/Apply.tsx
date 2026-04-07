@@ -257,13 +257,6 @@ const Apply = () => {
                     {errors.city && <p className={errorClass}>{errors.city}</p>}
                   </div>
                   <div>
-                    <div className="relative">
-                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                      <input type="text" name="zipCode" placeholder="Zip Code *" value={formData.zipCode} onChange={handleChange} className={inputClass} maxLength={10} />
-                    </div>
-                    {errors.zipCode && <p className={errorClass}>{errors.zipCode}</p>}
-                  </div>
-                  <div>
                     <StateDropdown
                       value={formData.state}
                       onChange={(val) => {
@@ -273,6 +266,13 @@ const Apply = () => {
                       inputClass={inputClass}
                     />
                     {errors.state && <p className={errorClass}>{errors.state}</p>}
+                  </div>
+                  <div>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                      <input type="text" name="zipCode" placeholder="Zip Code *" value={formData.zipCode} onChange={handleChange} className={inputClass} maxLength={10} />
+                    </div>
+                    {errors.zipCode && <p className={errorClass}>{errors.zipCode}</p>}
                   </div>
                 </div>
               </div>
